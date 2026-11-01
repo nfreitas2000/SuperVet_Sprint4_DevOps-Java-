@@ -5,7 +5,7 @@ pool:
   vmImage: 'ubuntu-latest'
 
 variables:
-  - group: ClyvoVet-Secrets
+  - group: SuperVet-Secrets-BD
 
 stages:
 - stage: CI
