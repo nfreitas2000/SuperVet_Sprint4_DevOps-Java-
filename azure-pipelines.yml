@@ -20,6 +20,10 @@ stages:
         tasks: 'build'
         publishJUnitResults: true
         testResultsFiles: '**/TEST-*.xml'
+      env:
+        DB_URL: $(DB_URL)
+        DB_USER: $(DB_USER)
+        DB_PASSWORD: $(DB_PASSWORD)
 
     - task: CopyFiles@2
       displayName: 'Copiar Artefato (.jar)'
