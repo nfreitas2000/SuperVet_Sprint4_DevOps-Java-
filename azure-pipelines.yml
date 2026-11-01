@@ -1,18 +1,36 @@
+# =============================================================================
+# ClyvoVet - Pipeline CI/CD (Azure DevOps)
+#   CI -> build + testes automaticos (Gradle) + publicacao do artefato (.jar)
+#   CD -> deploy automatico no Azure Web App (Linux / Java 21) usando o Azure SQL
+# =============================================================================
+
+# O CI dispara a cada push na branch principal. O enunciado cita "master" e o
+# repositorio usa "main"; as duas estao listadas para cobrir os dois casos.
 trigger:
-- main
+  branches:
+    include:
+      - main
+      - master
 
 pool:
   vmImage: 'ubuntu-latest'
 
 variables:
+  # Variable Group (Pipelines > Library). Precisa ter estas 3 variaveis, todas
+  # com o cadeado (secret) marcado:  DB_URL  |  DB_USER  |  DB_PASSWORD
   - group: SuperVet-Secrets-BD
 
 stages:
+
+# ----------------------------------- CI ---------------------------------------
 - stage: CI
   displayName: 'Integracao Continua (Build e Testes)'
   jobs:
   - job: Build
+    displayName: 'Build + Testes + Artefato'
     steps:
+    # Os testes usam H2 em memoria (src/test/resources/application.properties).
+    # Por isso este passo NAO recebe DB_URL / DB_USER / DB_PASSWORD.
     - task: Gradle@3
       displayName: 'Executar Build e Testes'
       inputs:
@@ -20,16 +38,16 @@ stages:
         tasks: 'build'
         publishJUnitResults: true
         testResultsFiles: '**/TEST-*.xml'
-      env:
-        DB_URL: $(DB_URL)
-        DB_USER: $(DB_USER)
-        DB_PASSWORD: $(DB_PASSWORD)
 
+    # build/libs gera DOIS jars: clyvovet-1.0.0.jar (executavel, bootJar) e
+    # clyvovet-1.0.0-plain.jar (sem dependencias). So o primeiro vai para o deploy.
     - task: CopyFiles@2
-      displayName: 'Copiar Artefato (.jar)'
+      displayName: 'Copiar Artefato (.jar executavel)'
       inputs:
         SourceFolder: '$(System.DefaultWorkingDirectory)/build/libs'
-        Contents: '*SNAPSHOT.jar'
+        Contents: |
+          *.jar
+          !*-plain.jar
         TargetFolder: '$(Build.ArtifactStagingDirectory)'
 
     - task: PublishBuildArtifacts@1
@@ -39,12 +57,16 @@ stages:
         ArtifactName: 'drop'
         publishLocation: 'Container'
 
+# ----------------------------------- CD ---------------------------------------
 - stage: CD
-  displayName: 'Entrega Continua (Deploy Automático)'
+  displayName: 'Entrega Continua (Deploy Automatico)'
   dependsOn: CI
-  condition: succeeded()
+  # Faz deploy so se o CI passou E o build veio da branch principal
+  # (evita publicar em producao um build de Pull Request).
+  condition: and(succeeded(), in(variables['Build.SourceBranch'], 'refs/heads/main', 'refs/heads/master'))
   jobs:
   - job: Deploy
+    displayName: 'Deploy no Azure Web App'
     steps:
     - task: DownloadBuildArtifacts@0
       displayName: 'Baixar Artefato'
@@ -61,4 +83,11 @@ stages:
         appType: 'webAppLinux'
         appName: 'clyvovet-app-24474'
         package: '$(System.ArtifactsDirectory)/**/*.jar'
-        appSettings: '-DB_URL "$(DB_URL)" -DB_USER "$(DB_USER)" -DB_PASSWORD "$(DB_PASSWORD)"'
+        # App Settings do Web App (viram variaveis de ambiente da aplicacao).
+        # SPRING_PROFILES_ACTIVE=azure ativa o application-azure.properties (Azure SQL).
+        appSettings: >-
+          -SPRING_PROFILES_ACTIVE azure
+          -SERVER_PORT 80
+          -DB_URL "$(DB_URL)"
+          -DB_USER "$(DB_USER)"
+          -DB_PASSWORD "$(DB_PASSWORD)"
