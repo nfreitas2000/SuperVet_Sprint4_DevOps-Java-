@@ -28,7 +28,8 @@ dependencies {
 
 	runtimeOnly 'com.h2database:h2'
 	runtimeOnly 'com.oracle.database.jdbc:ojdbc11'
-	runtimeOnly 'org.flywaydb:flyway-database-oracle'
+	runtimeOnly 'org.flywaydb:flyway-sqlserver'
+	runtimeOnly 'com.microsoft.sqlserver:mssql-jdbc'
 
 	developmentOnly 'org.springframework.boot:spring-boot-devtools'
 
