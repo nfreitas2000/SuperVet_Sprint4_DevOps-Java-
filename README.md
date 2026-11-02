@@ -1,8 +1,33 @@
-# 🐾 ClyvoVet
+# SuperVet - Sprint 4: DevOps Tools & Cloud Computing
 
-Aplicação web em **Spring Boot 4 + Thymeleaf** que conecta **tutores** e **veterinários**: o tutor cadastra seus pets e solicita consultas; o veterinário confirma ou recusa, registra o atendimento (prontuário e vacinas) e o tutor acompanha o histórico clínico e os reforços de vacina — com notificações automáticas em cada etapa.
+Este repositório contém a entrega final (Sprint 4) do projeto SuperVet, focado na implementação da disciplina de **Java Advanced** aliada a práticas modernas de DevOps e Cloud Computing.
 
-## Integrantes
+## 1. Descrição da Solução
+
+O **SuperVet** é um sistema de gerenciamento de clínicas veterinárias. A aplicação web permite que tutores gerenciem seus pets e agendem consultas, enquanto médicos veterinários podem visualizar suas agendas, gerenciar prontuários e interagir com as solicitações de atendimento. 
+
+**Stack de Tecnologias:**
+* **Back-end & Web:** Java 21, Spring Boot (Web, MVC, Data JPA, Security, OAuth2), Thymeleaf.
+* **Build & Dependências:** Gradle.
+* **Banco de Dados (Testes):** H2 Database (em memória).
+* **Banco de Dados (Produção - Nuvem):** Azure SQL Database (PaaS).
+* **Migração de Dados:** Flyway (Versionamento de banco de dados).
+* **Hospedagem (Cloud):** Azure Web App (Linux).
+* **CI/CD:** Azure DevOps.
+
+---
+
+## 2. Configuração do Projeto no Azure DevOps
+
+A esteira de integração e entrega contínuas foi inteiramente configurada no ambiente do Azure DevOps, seguindo os requisitos estabelecidos:
+
+* **Project Name:** Sprint 4 – Azure DevOps
+* **Description:** Projeto para entrega da Sprint 4 do professor Antonio Sergio Rodrigues Figueiredo
+* **Visibility:** Private
+* **Version control:** Git
+* **Work item process:** Scrum (ou Agile)
+
+### Integrantes
 
 | Nome | RM |
 |---|---|
@@ -11,210 +36,60 @@ Aplicação web em **Spring Boot 4 + Thymeleaf** que conecta **tutores** e **vet
 | João Victor Gomes de Souza | RM560907 |
 | Lucas Barranha Giannini | RM564508 |
 
-## Sumário
+*(Nota: O professor foi convidado para a organização no Azure DevOps com nível de acesso "Basic").*
 
-- [Tecnologias](#tecnologias)
-- [Como executar](#como-executar)
-- [Contas de demonstração](#contas-de-demonstração)
-- [Login com Google e GitHub (OAuth2)](#login-com-google-e-github-oauth2)
-- [Banco Oracle (opcional)](#banco-oracle-opcional)
-- [Requisitos da entrega](#requisitos-da-entrega)
-- [Fluxos de negócio](#fluxos-de-negócio)
-- [Arquitetura](#arquitetura)
-- [Testes](#testes)
+---
 
-## Tecnologias
+## 3. Diagrama da Arquitetura e Fluxo CI/CD
 
-| Camada | Tecnologia |
-|---|---|
-| Linguagem | Java 21 |
-| Framework | Spring Boot 4.0 (Web MVC, Data JPA, Validation) |
-| Frontend | Thymeleaf (renderizado no servidor) + CSS próprio |
-| Segurança | Spring Security 7 — login por sessão (formulário) + OAuth2 (Google/GitHub) |
-| Banco | H2 em memória (padrão, modo Oracle) ou Oracle |
-| Versionamento do banco | Flyway |
-| Testes | JUnit 5, AssertJ, Spring Security Test, MockMvc |
+![Arquitetura de Fluxo](Arquitetura-SuperVet.png)
 
-## Como executar
+A arquitetura engloba desde a máquina do desenvolvedor até o acesso do usuário final ao ambiente provisionado no Microsoft Azure. O fluxo ocorre na seguinte ordem:
 
-Pré-requisito: **JDK 21**. Não é preciso instalar Gradle nem banco de dados.
+1. **Desenvolvedor** realiza o push do código-fonte para o repositório **GitHub** (branch `main`/`master`).
+2. O **Azure DevOps (Pipeline CI)** detecta a alteração automaticamente através de um trigger configurado.
+3. O **Azure Pipelines** aloca um agente (Ubuntu) e executa o **Gradle** para realizar o Build da aplicação e executar os testes unitários/integrados (usando o banco H2 em memória).
+4. Sendo o build e os testes bem-sucedidos, o artefato final (arquivo `.jar` executável) é gerado e **publicado (Drop)** no próprio ambiente do Azure DevOps.
+5. A etapa de **CD (Continuous Delivery)** é acionada automaticamente, baixando o artefato seguro recém-publicado.
+6. A pipeline realiza o deploy contínuo do artefato para o **Azure Web App (PaaS - Linux/Java 21)**.
+7. A aplicação web inicia, conecta-se com segurança ao **Azure SQL Database (PaaS)**, e o Flyway executa as migrações (criação de tabelas e inserção de dados iniciais).
+8. O **Usuário Final** acessa a aplicação através do navegador pela URL pública do Azure Web App.
 
-```bash
-git clone https://github.com/Malualvess-dev/ClyvoVet_Gradle.git
-cd ClyvoVet_Gradle
-./gradlew bootRun          # Windows: gradlew.bat bootRun
-```
+---
 
-Acesse **http://localhost:8080** — você será levado à tela de login.
+## 4. Banco de Dados em Nuvem (PaaS)
 
-Por padrão a aplicação usa o perfil `dev` (H2 em memória). Ao iniciar, o Flyway cria as tabelas e insere os dados de demonstração. Como o banco é em memória, os dados voltam ao estado inicial a cada reinício.
+O projeto utiliza um Banco de Dados em Nuvem na modalidade **PaaS (Platform as a Service)**.
+A tecnologia escolhida foi o **Azure SQL Database**.
+As credenciais e a URL de acesso são injetadas em tempo de execução pela pipeline (variáveis de ambiente), mantendo o código seguro e o banco protegido na nuvem. Toda a estrutura e tabelas (`usuarios`, `pets`, `consultas`, etc.) são criadas de forma automatizada pelo Flyway no momento em que a aplicação "sobe" no Azure.
 
-## Contas de demonstração
+---
 
-Criadas pela migration `V4__inserir_dados_de_demonstracao.sql`. **Senha de todas: `Clyvo@2026`**
+## 5. Pipelines CI/CD e Segurança
 
-| Perfil | E-mail | O que já existe |
-|---|---|---|
-| Tutor | `carla@clyvovet.com` | Pets Thor e Mia; Thor com uma consulta concluída e duas vacinas |
-| Veterinário | `ana.vet@clyvovet.com` | Clínica geral |
-| Veterinário | `bruno.vet@clyvovet.com` | Dermatologia |
+A automação foi implementada utilizando YAML (`azure-pipelines.yml`), garantindo as melhores práticas:
 
-Também é possível criar uma conta nova em **/cadastro** e escolher o perfil em seguida.
+### Integração Contínua (CI)
+* **Gatilho (Trigger):** Configurado para disparar automaticamente em qualquer commit na branch `main` ou `master`.
+* **Testes Automáticos:** A *task* do Gradle executa todos os testes da aplicação (`./gradlew test`) num ambiente isolado usando o banco de dados em memória H2, garantindo que o banco de produção não seja afetado.
+* **Publicação de Artefato:** Após o build e a passagem dos testes, o arquivo `.jar` é extraído e publicado na pasta do Azure DevOps via task `PublishBuildArtifacts@1`.
 
-## Login com Google e GitHub (OAuth2)
+### Entrega Contínua (CD)
+* **Deploy Automático:** O Job de Deploy depende (`dependsOn`) do Job de CI. Ele só é executado se os testes passarem.
+* **Azure Web App:** Utilizamos a *task* `AzureWebApp@1` para provisionar o artefato no serviço de hospedagem da Azure.
+* **App Settings Dinâmicos:** Passamos a variável de inicialização `-SPRING_PROFILES_ACTIVE azure` durante o deploy para que o Spring utilize as propriedades corretas do ambiente remoto.
 
-O login social é ativado **apenas se as credenciais estiverem configuradas** por variáveis de ambiente. Sem elas, a aplicação funciona normalmente e os botões não aparecem. Nenhum segredo fica no repositório.
+### Proteção de Dados Sensíveis
+Todos os dados de conexão do banco de produção estão protegidos utilizando o recurso de **Library (Variable Groups)** do Azure DevOps. O grupo `SuperVet-Secrets-BD` contém:
+* `DB_URL`
+* `DB_USER`
+* `DB_PASSWORD`
+Essas variáveis estão marcadas como **Secrets (Cadeado fechado)**, garantindo que não sejam expostas nos logs da pipeline e sejam injetadas com segurança apenas na execução da aplicação.
 
-| Variável | Onde obter |
-|---|---|
-| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | Google Cloud Console → APIs e serviços → Credenciais → ID do cliente OAuth |
-| `GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET` | GitHub → Settings → Developer settings → OAuth Apps |
+---
 
-URLs de callback para cadastrar nos provedores:
+## Links Importantes (Também presentes no PDF de entrega)
 
-- Google: `http://localhost:8080/login/oauth2/code/google`
-- GitHub: `http://localhost:8080/login/oauth2/code/github`
-
-Exemplo (PowerShell):
-
-```powershell
-$env:GITHUB_CLIENT_ID="seu-client-id"
-$env:GITHUB_CLIENT_SECRET="seu-client-secret"
-./gradlew bootRun
-```
-
-No primeiro acesso via Google/GitHub a conta é criada automaticamente e o usuário escolhe o perfil (tutor ou veterinário) antes de acessar o sistema.
-
-## Banco Oracle (opcional)
-
-Para usar Oracle, ative o perfil `oracle` e informe a conexão por variáveis de ambiente:
-
-```powershell
-$env:SPRING_PROFILES_ACTIVE="oracle"
-$env:DB_URL="jdbc:oracle:thin:@host:1521:ORCL"
-$env:DB_USERNAME="seu_usuario"
-$env:DB_PASSWORD="sua_senha"
-./gradlew bootRun
-```
-
-As migrations usam SQL compatível com Oracle e com o H2 em modo Oracle, e as tabelas usam o prefixo `TB_CV_` para não conflitar com tabelas antigas.
-
-## Requisitos da entrega
-
-### 1. Frontend (Thymeleaf)
-
-- Páginas renderizadas no servidor, com layout e componentes reutilizáveis (`templates/fragments`).
-- Menu e telas diferentes para cada perfil; mensagens de sucesso e erro após cada ação.
-- Formulários exibem os erros de validação ao lado de cada campo, sem perder o que foi digitado.
-- Páginas próprias para acesso negado (403) e recurso não encontrado (404).
-
-### 2. Flyway
-
-| Versão | Migration |
-|---|---|
-| V1 | `criar_tabelas_de_usuarios` — usuários, tutores, veterinários |
-| V2 | `criar_tabelas_de_pets_e_consultas` — pets, consultas, notificações |
-| V3 | `adicionar_prontuario_e_vacinas` — evolução de schema: novas colunas em consulta + tabela de vacinas |
-| V4 | `inserir_dados_de_demonstracao` — contas e dados de demonstração |
-
-O Hibernate **não** altera o schema (`ddl-auto=none`): o Flyway é o único responsável pela estrutura do banco.
-
-### 3. Spring Security
-
-- **Dois perfis** (`TUTOR` e `VETERINARIO`), mais o estado `PENDENTE` para contas que ainda não escolheram o perfil.
-- **Rotas protegidas no servidor por perfil** (`SecurityConfig`):
-
-| Rota | Acesso |
-|---|---|
-| `/login`, `/cadastro`, `/css/**` | Público |
-| `/cadastro/perfil/**` | Apenas contas com perfil pendente |
-| `/tutor/**` | Apenas `TUTOR` |
-| `/veterinario/**` | Apenas `VETERINARIO` |
-| Demais rotas | Usuário autenticado |
-
-- Sessão no servidor, sem token para copiar ou colar; senhas com BCrypt; proteção CSRF em todos os formulários.
-- Login por e-mail/senha **e** OAuth2 (Google e GitHub).
-- Além da rota, cada consulta, pet e notificação é buscada junto com o usuário logado: um usuário não acessa dados de outro mesmo que altere o ID na URL.
-
-### 4. Funcionalidades completas
-
-Dois fluxos de negócio com regras além do CRUD, descritos abaixo, e validações em todos os formulários (Bean Validation: CPF, CRMV, telefone, e-mail, força de senha, datas, faixas de peso etc.).
-
-## Fluxos de negócio
-
-### Fluxo 1 — Agendamento de consulta
-
-```
-Tutor solicita ──► SOLICITADA ──► Veterinário confirma ──► CONFIRMADA
-                       │                                       │
-                       ├─► Veterinário recusa ──► RECUSADA     └─► Tutor cancela (≥ 24h) ──► CANCELADA
-                       └─► Tutor cancela ──► CANCELADA
-```
-
-Regras (`PoliticaDeAgendamento`, `AgendamentoService` e `Consulta`):
-
-- Atendimento de segunda a sábado, das 08:00 às 17:30, em intervalos de 30 minutos.
-- Antecedência mínima de 1 hora para solicitar.
-- O tutor só vê e só consegue reservar **horários livres** do veterinário escolhido.
-- Um pet não pode ter duas consultas ativas no mesmo dia.
-- Recusa e cancelamento exigem justificativa (5 a 250 caracteres).
-- Consulta confirmada só pode ser cancelada com no mínimo **24 horas** de antecedência.
-- Cada transição gera uma **notificação** automática para a outra parte.
-
-### Fluxo 2 — Atendimento e prontuário
-
-```
-CONFIRMADA ──► Veterinário registra o atendimento ──► CONCLUIDA
-                  ├─ diagnóstico, prescrição e peso aferido
-                  ├─ atualiza o peso do pet
-                  ├─ registra a vacina aplicada e a próxima dose (opcional)
-                  └─ notifica o tutor
-```
-
-Regras (`AtendimentoService`, `Consulta` e `Vacina`):
-
-- Só consultas **confirmadas** podem ser atendidas, e somente a partir do dia marcado.
-- Só o veterinário responsável pela consulta pode registrá-la.
-- A próxima dose precisa ser posterior à aplicação e exige o nome da vacina.
-- O tutor passa a ver o **histórico clínico** e a **carteira de vacinação** do pet; o painel mostra os reforços previstos para os próximos 30 dias.
-
-## Arquitetura
-
-```
-src/main/java/br/com/fiap/clyvovet
-├── config          # Relógio da aplicação (fuso America/Sao_Paulo)
-├── controller      # Controllers MVC
-│   ├── tutor/        # PetController, TutorConsultaController, TutorPainelController
-│   ├── veterinario/  # VeterinarioAgendaController, AtendimentoController
-│   └── advice/       # Dados globais das telas e tratamento de erros
-├── dto
-│   ├── request     # Dados recebidos dos formulários, com Bean Validation (*Request)
-│   └── response    # Dados enviados às telas (*Response, records imutáveis)
-├── exception       # RegraNegocioException, RecursoNaoEncontradoException
-├── mapper          # Conversão entidade → Response
-├── model           # Entidades JPA com as regras de transição de status
-├── repository      # Spring Data JPA
-├── security        # SecurityConfig, OAuth2, usuário logado e sessão
-└── service         # Casos de uso (agendamento, atendimento, contas...)
-```
-
-Fluxo de uma requisição: **Controller** recebe o `*Request` validado → **Service** aplica as regras sobre as entidades (`model`) → **Mapper** converte para `*Response` → **Controller** entrega o response ao template Thymeleaf. As telas nunca recebem entidades JPA.
-
-Decisões de projeto:
-
-- **As regras de estado ficam na entidade.** `Consulta` expõe `confirmar()`, `recusar()`, `cancelar()` e `concluir()` e não permite transições inválidas; os services só orquestram.
-- **Responsabilidades separadas:** `PoliticaDeAgendamento` cuida dos horários, `AgendamentoService` do fluxo 1, `AtendimentoService` do fluxo 2 e `ConsultaService` das consultas de leitura.
-- **Data e hora testáveis:** os serviços recebem um `Clock` injetado, o que permite testar regras de horário de forma determinística.
-- **Erros de negócio tratados em um único lugar:** `TratamentoDeErrosAdvice` mostra a mensagem na própria página de origem.
-
-## Testes
-
-```bash
-./gradlew test
-```
-
-41 testes:
-
-- `ConsultaTest` e `PoliticaDeAgendamentoTest` — regras de domínio (transições, 24h, horários, domingo).
-- `FluxosDeNegocioTest` — os dois fluxos completos sobre o banco criado pelo Flyway.
-- `PaginasESegurancaTest` — todas as páginas carregam, cada perfil é bloqueado na área do outro (403), visitantes são redirecionados ao login, CSRF e validações dos formulários.
+* **Repositório GitHub:** https://github.com/nfreitas2000/SuperVet_Sprint4_DevOps-Java-
+* **Vídeo no YouTube (Demonstração):** A gravar
+* **Projeto no Azure DevOps:** https://dev.azure.com/RM564992/Sprint%204%20–%20Azure%20DevOps
