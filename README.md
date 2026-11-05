@@ -91,5 +91,5 @@ Essas variáveis estão marcadas como **Secrets (Cadeado fechado)**, garantindo 
 ## Links Importantes (Também presentes no PDF de entrega)
 
 * **Repositório GitHub:** https://github.com/nfreitas2000/SuperVet_Sprint4_DevOps-Java-
-* **Vídeo no YouTube (Demonstração):** A gravar
+* **Vídeo no YouTube (Demonstração):** https://youtu.be/A7UCw6g41Ig?is=--_uLVTYuDdErVj-
 * **Projeto no Azure DevOps:** https://dev.azure.com/RM564992/Sprint%204%20–%20Azure%20DevOps
